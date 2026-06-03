@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>星铁福袋拆包模拟器</title>
+<style>
+  :root{
+    --bg:#090b14; --panel:#111827cc; --gold:#f8d783; --txt:#f5f0df; --muted:#b8b0a0;
+    --good:#72f0c4; --bad:#ffb1be; --glow:0 0 24px rgba(248,215,131,.28), 0 0 70px rgba(82,107,255,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; min-height:100vh; color:var(--txt); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; background:
+    linear-gradient(180deg,rgba(8,9,19,.82),rgba(17,19,30,.78) 42%,rgba(8,9,19,.88)),
+    radial-gradient(circle at 15% 10%, rgba(248,215,131,.18), transparent 28%),
+    radial-gradient(circle at 85% 4%, rgba(113,92,255,.22), transparent 24%),
+    url("https://pic1.imgdb.cn/item/6a202f819ecef74017863020.png") center/cover fixed no-repeat,
+    #080913; overflow-x:hidden}
+  body:before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.34; background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px); background-size:42px 42px; mask-image:radial-gradient(circle,#000,transparent 80%)}
+  .wrap{max-width:1220px; margin:0 auto; padding:28px 18px 60px; position:relative}
+  .hero,.stats,.panel{border:1px solid rgba(248,215,131,.22); background:linear-gradient(180deg,rgba(22,29,48,.9),rgba(10,13,26,.88)); border-radius:24px; box-shadow:var(--glow); backdrop-filter:blur(14px)}
+  .hero{padding:26px; margin-bottom:18px; overflow:hidden}
+  h1{font-size:clamp(30px,4vw,54px); margin:0 0 12px; letter-spacing:.04em; line-height:1.05}
+  .sub{color:var(--muted); line-height:1.7; max-width:860px}
+  a.textLink{color:#f2d991; text-decoration:none; border-bottom:1px solid rgba(242,217,145,.34); transition:.18s color,.18s border-color}
+  a.textLink:hover{color:#9fd8ff; border-bottom-color:rgba(159,216,255,.8)}
+  a.textLink:focus-visible{outline:2px solid rgba(159,216,255,.7); outline-offset:3px; border-radius:4px}
+  .modeGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px}
+  .modeCard{min-height:92px; border-radius:18px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.045); color:var(--txt); padding:16px; cursor:pointer; text-align:left; box-shadow:none}
+  .modeCard:hover,.modeCard.active{transform:none; filter:none; border-color:rgba(248,215,131,.6); background:rgba(248,215,131,.1)}
+  .modeCard b{display:block; color:var(--gold); font-size:20px; margin-bottom:8px}
+  .modeCard span{display:block; color:var(--muted); font-size:13px; line-height:1.45}
+  .subModes{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+  .segBtn{border-radius:999px; padding:11px 15px; color:var(--txt); background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.1); box-shadow:none}
+  .segBtn.active{color:#17120a; background:linear-gradient(135deg,#fff1b8,#f2b94f 48%,#b8791d); border-color:transparent}
+  .actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:18px}
+  button{appearance:none; border:0; border-radius:999px; padding:13px 18px; color:#17120a; font-weight:900; cursor:pointer; background:linear-gradient(135deg,#fff1b8,#f2b94f 48%,#b8791d); box-shadow:0 10px 30px rgba(248,215,131,.18); transition:.18s transform,.18s filter,.18s opacity}
+  button:hover{transform:translateY(-2px); filter:brightness(1.06)}
+  button:disabled{opacity:.42; cursor:not-allowed; transform:none; filter:grayscale(.35)}
+  button.secondary{color:var(--txt); background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04)); border:1px solid rgba(248,215,131,.22)}
+  main{display:grid; grid-template-columns:1fr 360px; gap:18px}
+  .panel,.stats{padding:18px}
+  .panel h2,.stats h2{margin:0 0 12px; font-size:20px; color:var(--gold)}
+  .statGrid{display:grid; grid-template-columns:1fr; gap:10px}
+  .stat{background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.08); padding:14px; border-radius:16px}
+  .stat b{display:block; font-size:24px; color:var(--gold); margin-top:6px}
+  .resultList{min-height:430px; display:grid; gap:16px}
+  .revealStage{min-height:288px; border:1px dashed rgba(248,215,131,.25); border-radius:20px; display:grid; place-items:center; position:relative; overflow:hidden; perspective:900px; background:radial-gradient(circle at center, rgba(248,215,131,.08), rgba(255,255,255,.02) 50%, transparent 72%)}
+  .revealStage.clickable{cursor:pointer; border-style:solid; border-color:rgba(248,215,131,.42)}
+  .revealStage.clickable:hover{background:radial-gradient(circle at center, rgba(248,215,131,.14), rgba(255,255,255,.035) 50%, transparent 72%)}
+  .revealStage:before{content:""; position:absolute; width:390px; height:390px; border-radius:50%; background:conic-gradient(from 0deg, transparent, rgba(248,215,131,.2), transparent 34%, rgba(114,240,196,.14), transparent 68%); opacity:.22; animation:stageSpin 7s linear infinite}
+  .revealStage:after{content:""; position:absolute; inset:-45%; background:linear-gradient(105deg, transparent 42%, rgba(255,244,199,.28), transparent 58%); opacity:0}
+  .revealStage.animating:after{animation:lightSweep 1.05s ease-in-out infinite}
+  .stageHint{position:relative; z-index:1; color:rgba(245,240,223,.42); text-align:center; padding:20px; line-height:1.7}
+  .revealCard{position:relative; z-index:1; width:min(430px,92%); min-height:198px; display:grid; align-content:center; gap:12px; padding:24px; border-radius:22px; border:1px solid rgba(248,215,131,.44); background:linear-gradient(145deg, rgba(255,241,184,.16), rgba(21,28,48,.94) 42%, rgba(8,10,22,.96)); box-shadow:0 18px 60px rgba(0,0,0,.28), 0 0 42px rgba(248,215,131,.2); text-align:center; transform-style:preserve-3d; overflow:hidden}
+  .revealCard:before{content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 10%, rgba(255,255,255,.16), transparent 34%); transform:translateX(-120%); opacity:.85}
+  .revealCard.spinning{animation:cardShuffle .72s ease both}
+  .revealCard.spinning:before{animation:cardShine .72s ease both}
+  .revealCard.done{animation:cardReveal .68s cubic-bezier(.18,.88,.22,1.16) both}
+  .revealCard.done:before{animation:cardShine .72s ease both}
+  .revealKicker{color:var(--muted); font-size:13px; font-weight:800}
+  .revealName{font-size:clamp(20px,3vw,34px); line-height:1.25; font-weight:1000; color:#fff4c7}
+  .revealPrice{font-size:28px; color:var(--good); font-weight:1000}
+  .revealMeta{color:var(--muted); font-size:13px; line-height:1.45}
+  .resultGrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px}
+  .resultItem{min-height:128px; display:grid; align-content:space-between; gap:10px; padding:13px; border-radius:16px; background:rgba(255,255,255,.055); border:1px solid rgba(114,240,196,.24)}
+  .resultItem:first-child{border-color:rgba(248,215,131,.5); box-shadow:0 0 24px rgba(248,215,131,.1)}
+  .tag{font-size:12px; color:#17120a; background:var(--gold); display:inline-flex; padding:4px 8px; border-radius:999px; font-weight:900}
+  .name{font-weight:900; line-height:1.45}
+  .meta{color:var(--muted); font-size:12px; margin-top:5px; line-height:1.45}
+  .money{color:var(--good); font-weight:1000; white-space:nowrap}
+  details{border:1px solid rgba(248,215,131,.18); background:rgba(255,255,255,.04); border-radius:18px; padding:12px 14px; margin-bottom:10px}
+  summary{cursor:pointer; color:var(--gold); font-weight:900}
+  table{width:100%; table-layout:fixed; border-collapse:collapse; margin-top:10px; font-size:13px}
+  th,td{border-bottom:1px solid rgba(255,255,255,.08); padding:8px 6px; text-align:left; vertical-align:top}
+  th{color:var(--muted); font-weight:700}
+  th:nth-child(1),td:nth-child(1){width:auto}
+  th:nth-child(2),td:nth-child(2){width:92px; white-space:nowrap; text-align:right}
+  th:nth-child(3),td:nth-child(3){width:78px; white-space:nowrap; text-align:right}
+  .statusLine{min-height:22px; margin-top:12px; color:var(--muted); font-size:13px; line-height:1.5}
+  .note{color:var(--muted); line-height:1.65; font-size:13px}
+  .configPanel[hidden]{display:none}
+  .configBar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0}
+  .configBar input[type=file]{display:none}
+  .fileBtn{display:inline-flex; align-items:center; border-radius:999px; padding:13px 18px; color:var(--txt); font-weight:900; cursor:pointer; background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04)); border:1px solid rgba(248,215,131,.22)}
+  textarea{width:100%; min-height:340px; resize:vertical; border-radius:18px; border:1px solid rgba(248,215,131,.22); background:rgba(3,6,18,.68); color:var(--txt); padding:14px; font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; outline:none}
+  textarea:focus{border-color:rgba(248,215,131,.55); box-shadow:0 0 0 3px rgba(248,215,131,.08)}
+  footer{margin-top:18px; text-align:center; color:var(--muted); font-size:13px}
+  @media(max-width:950px){main,.modeGrid{grid-template-columns:1fr}.stats{order:-1}}
+  @keyframes stageSpin{to{transform:rotate(360deg)}}
+  @keyframes lightSweep{0%{opacity:0; transform:translateX(-30%) rotate(8deg)}35%{opacity:1}100%{opacity:0; transform:translateX(30%) rotate(8deg)}}
+  @keyframes cardShine{to{transform:translateX(130%)}}
+  @keyframes cardShuffle{0%{opacity:.35; transform:translateY(20px) scale(.86) rotateY(76deg); filter:blur(4px)}55%{opacity:1; transform:translateY(0) scale(1.04) rotateY(-10deg); filter:blur(0)}100%{opacity:1; transform:translateY(0) scale(1) rotateY(0)}}
+  @keyframes cardReveal{0%{opacity:.75; transform:rotateY(92deg) scale(.92); filter:brightness(1.4) blur(2px)}54%{opacity:1; transform:rotateY(-8deg) scale(1.06); box-shadow:0 0 88px rgba(248,215,131,.46)}100%{opacity:1; transform:rotateY(0) scale(1); filter:brightness(1) blur(0); box-shadow:0 18px 60px rgba(0,0,0,.28), 0 0 42px rgba(248,215,131,.2)}}
+  @media(max-width:560px){.statGrid{grid-template-columns:1fr}.hero{padding:22px}.money{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>崩坏：星穹铁道｜福袋拆包模拟器</h1>
+    <div class="sub">数据是本地的；先点击购买一包，然后点击“拆包”会随机揭晓一个未拆商品。全局随机会把所有普通商品合并后按权重抽取，非卖品池仍按独立非卖品规则抽取。<br>本模拟器仅供娱乐，概率为个人根据 B 站 UP：<a class="textLink" href="https://space.bilibili.com/146921" target="_blank" rel="noopener noreferrer">猪儿姐的杂货铺</a> 的视频微调拟合，不代表实际官方概率。</div>
+    <div class="modeGrid">
+      <button class="modeCard active" data-config="default"><b>289福袋</b><span>使用写入页面的默认配置。</span></button>
+      <button class="modeCard" data-config="custom"><b>自定义</b><span>使用下方 JSON 编辑、导入或导出的配置。</span></button>
+    </div>
+    <div class="subModes">
+      <button class="segBtn active" data-draw-mode="grouped">按照分组</button>
+      <button class="segBtn" data-draw-mode="global">全局随机</button>
+    </div>
+    <div class="actions">
+      <button id="buyBtn">购买一包</button>
+      <button id="resetBtn" class="secondary">清空本轮</button>
+    </div>
+    <div id="statusLine" class="statusLine"></div>
+  </section>
+
+  <main>
+    <section class="panel">
+      <h2>拆包结果</h2>
+      <div id="results" class="resultList"></div>
+    </section>
+    <aside class="stats">
+      <h2>本轮统计</h2>
+      <div class="statGrid">
+        <div class="stat">商品库余额<b id="bank">¥0</b></div>
+        <div class="stat">已拆数量<b id="openedCount">0 / 14</b></div>
+        <div class="stat">剩余未拆<b id="leftCount">14</b></div>
+      </div>
+      <p class="note">非卖品按零售价 ¥0 计算，会照常进入结果；拆包时从未拆商品里随机揭晓。</p>
+    </aside>
+  </main>
+
+  <section id="customPanel" class="panel configPanel" style="margin-top:18px" hidden>
+    <h2>自定义分组 JSON</h2>
+    <p class="note">items 支持两种格式：数组写法 <code>["商品名", 价格, 权重, ["品类A","品类B"]]</code>，或对象写法 <code>{"name":"商品名","price":32,"weight":100,"categories":["景元"]}</code>。品类可省略；有品类时会等概率抽取并显示为“商品名-品类”。</p>
+    <div class="configBar">
+      <button id="applyConfigBtn">套用 JSON</button>
+      <button id="reloadConfigBtn" class="secondary">还原为当前配置</button>
+      <button id="exportConfigBtn" class="secondary">导出 JSON</button>
+      <label class="fileBtn" for="importConfigFile">导入 JSON</label>
+      <input id="importConfigFile" type="file" accept="application/json,.json" />
+    </div>
+    <textarea id="configEditor" spellcheck="false"></textarea>
+  </section>
+
+  <section class="panel" style="margin-top:18px">
+    <h2>当前分组</h2>
+    <p class="note" id="groupNote"></p>
+    <div id="groups"></div>
+  </section>
+  <footer>Created by <a class="textLink" href="https://space.bilibili.com/312512202" target="_blank" rel="noopener noreferrer">SanCai</a>.</footer>
+</div>
+
+<script>
+const defaultPools = [
+  {title:"高价区",draw:1,items:[["符玄 1/7手办",888,0.5],["黑塔 1/8可动手办",758,0.5],["彦卿 可动人偶",458,2],["砂金 粘土人手办",349,5],["三月七 粘土人手办",325,3],["丹恒 粘土人手办",325,2],["砂金「我来博弈」主题礼盒",299,1],["一周年纪念收藏卡套装",299,30],["卡芙卡 1/8手办 星铁LIVE Ver.",269,6],["Q版叠叠乐 第三弹 全套端盒",238.8,10],["Q版叠叠乐 第二弹 全套端盒",238.8,10],["星铁LIVE系列纪念礼盒（2025年）",198,15],["星铁LIVE系列纪念礼盒（2024年）",178,15]]},
+  {title:"129～89元段",draw:1,items:[["群星的寓言系列镭射票（全套端盒）",129,20],["星期日主题笔记本套组",129,5],["景元主题 石火梦身印象项链",128,5],["罗刹主题 白花的祈望项链",128,5],["启行之时主题Q版手办（随机1款）",115,30],["嗷呜嗷呜系列毛绒玩偶",109,15],["盛会邀约系列亚克力收藏套装",108,10],["叽米的会客室系列毛绒玩偶",89,10]]},
+  {title:"小物件",draw:1,items:[["谐乐大典邀请函套组",89,20],["与你同行的回忆系列明信片 Vol1.0",50,30],["与你同行的回忆系列明信片 Vol2.0",60,30],["宇宙糖果屋系列PET色纸",35,20]]},
+  {title:"光锥系列和其他",draw:1,items:[["光锥系列亚克力流沙摆件",40,10],["光锥系列亚克力流沙立牌",68,50],["庆典祝礼系列挂画",59,5],["Q版娃娃系列PU卡套",58,30],["帕姆毛绒发箍",40,5]]},
+  {title:"48元亚克力",draw:1,items:[["宇宙糖果屋系列亚克力摆件",48,20],["小不点猫猫系列亚克力立牌",48,80]]},
+  {title:"立绘系列亚克力挂件",draw:1,items:[["立绘系列亚克力挂件",32,100]]},
+  {title:"立绘系列亚克力立牌",draw:1,items:[["立绘系列亚克力立牌",58,100]]},
+  {title:"立绘系列马口铁徽章",draw:1,items:[["立绘系列马口铁徽章",18,100]]},
+  {title:"不知道怎么分的",draw:1,items:[["光锥系列亚克力色纸",48,60],["光锥系列亚克力挂件",32,30],["星铁LIVE系列亚克力流沙摆件",40,10]]},
+  {title:"15元组",draw:1,items:[["光锥系列马口铁徽章",15,40],["宇宙糖果屋系列马口铁徽章",15,20],["星铁LIVE系列马口铁徽章",15,30],["帕姆留影簿系列仿拍立得第一弹（盲袋单抽）",15,10]]},
+  {title:"不知道怎么分的2",draw:1,items:[["小不点猫猫系列亚克力挂件",28,30],["小不点猫猫系列马口铁徽章",15,30],["星铁LIVE系列PET色纸",35,10],["星铁LIVE系列亚克力挂件",28,20],["星铁LAND系列亚克力色纸",48,10]]},
+  {title:"不知道怎么分的3",draw:1,items:[["小不点猫猫系列收藏卡",10,50],["星铁LAND系列亚克力挂件",28,20],["星铁LAND系列马口铁徽章",18,20],["发车倒计时系列亚克力流沙挂件",38,10]]},
+  {title:"剩下的",draw:1,items:[["群星邀约系列亚克力流沙挂件",40,20],["群星邀约系列马口铁徽章",15,40],["群星邀约系列仿胶片卡",9.9,20],["星间旅行系列马口铁徽章",15,20]]},
+  {title:"非卖品池",draw:1,nonSale:true,items:[["彦卿可动人偶特典亚克力挂件（非卖品）",0,5],["符玄1/7手办特典亚克力色纸（非卖品）",0,2],["三月七粘土人特典色纸（非卖品）",0,10],["砂金粘土人特典亚克力立牌（非卖品）",0,10],["丹恒粘土人DOLL特典马口铁徽章（非卖品）",0,2],["景元可动人偶特典马口铁徽章（非卖品）",0,2],["刃粘土人特典马口铁徽章（非卖品）",0,2],["星期日粘土人特典亚克力色纸（非卖品）",0,3],["知更鸟粘土人特典亚克力色纸（非卖品）",0,5],["三月七1/7手办特典亚克力色纸（非卖品）",0,2],["小不点猫猫系列景元手办特典马口铁徽章（非卖品）",0,2],["萨姆可动手办特典挂摆镜（非卖品）",0,5],["小不点猫猫系列mini徽章套组（非卖品）",0,30],["银河潮流指南系列亚克力收纳套（非卖品）",0,20]]}
+];
+
+const sampleCustomPools = [
+  {title:"示例商品池",draw:2,items:[
+    ["立绘系列亚克力挂件",32,70,["景元","卡芙卡","三月七"]],
+    ["光锥系列色纸",48,30]
+  ]},
+  {title:"示例非卖品池",draw:1,nonSale:true,items:[
+    ["特典徽章（非卖品）",0,100,["丹恒","符玄"]]
+  ]}
+];
+
+let customPools = JSON.parse(JSON.stringify(sampleCustomPools));
+let configKind = "default";
+let drawMode = "grouped";
+let current = [];
+let revealed = [];
+let bank = 0;
+let animationBusy = false;
+
+const $ = s => document.querySelector(s);
+const money = n => "¥" + (Math.round(n * 10) / 10).toLocaleString("zh-CN", {minimumFractionDigits:Number.isInteger(n) ? 0 : 1});
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const activePools = () => configKind === "custom" ? customPools : defaultPools;
+const packSize = () => activePools().reduce((sum, pool) => sum + Number(pool.draw || 0), 0);
+const randomNames = () => activePools().flatMap(pool => pool.items.map(item => String(itemParts(item).name)));
+
+function itemParts(item){
+  if(Array.isArray(item)){
+    return {name:item[0], price:item[1], weight:item[2], categories:item[3]};
+  }
+  return {name:item.name, price:item.price, weight:item.weight ?? item.prob ?? item.probability, categories:item.categories ?? item.category};
+}
+function normalizeCategories(value){
+  if(value == null || value === "") return [];
+  const list = Array.isArray(value) ? value : String(value).split(/[，,]/);
+  return list.map(x => String(x).trim()).filter(Boolean);
+}
+function displayName(item){
+  if(!item.categories.length) return item.name;
+  const category = item.categories[Math.floor(Math.random() * item.categories.length)];
+  return `${item.name}-${category}`;
+}
+function weightedPick(pool){
+  const normalized = pool.items.map(itemParts);
+  const sum = normalized.reduce((total, item) => total + Number(item.weight), 0);
+  let r = Math.random() * sum;
+  for(const item of normalized){
+    r -= Number(item.weight);
+    if(r <= 0){
+      const categories = normalizeCategories(item.categories);
+      return {name:displayName({...item, categories}), baseName:String(item.name), price:Number(item.price), weight:Number(item.weight), categories, pool:pool.title, nonSale:Boolean(pool.nonSale), opened:false};
+    }
+  }
+  const last = normalized.at(-1);
+  const categories = normalizeCategories(last.categories);
+  return {name:displayName({...last, categories}), baseName:String(last.name), price:Number(last.price), weight:Number(last.weight), categories, pool:pool.title, nonSale:Boolean(pool.nonSale), opened:false};
+}
+function makePackGrouped(pools){
+  const out = [];
+  pools.forEach(pool => {
+    for(let i = 0; i < pool.draw; i++) out.push(weightedPick(pool));
+  });
+  return out;
+}
+function makePackGlobal(pools){
+  const normalPools = pools.filter(pool => !pool.nonSale);
+  const nonSalePools = pools.filter(pool => pool.nonSale);
+  const normalDraws = normalPools.reduce((sum, pool) => sum + Number(pool.draw || 0), 0);
+  const globalItems = normalPools.flatMap(pool => pool.items.map(item => ({...itemParts(item), poolTitle:pool.title})));
+  const globalPool = {
+    title:"全局随机商品池",
+    draw:normalDraws,
+    items:globalItems.map(item => [item.name, item.price, item.weight, item.categories])
+  };
+  const out = [];
+  for(let i = 0; i < normalDraws; i++) out.push(weightedPick(globalPool));
+  nonSalePools.forEach(pool => {
+    for(let i = 0; i < pool.draw; i++) out.push(weightedPick(pool));
+  });
+  return out;
+}
+function makePack(){
+  const pools = activePools();
+  return drawMode === "global" ? makePackGlobal(pools) : makePackGrouped(pools);
+}
+function updateStats(){
+  const opened = revealed.length;
+  const size = current.length || packSize();
+  $("#bank").textContent = money(bank);
+  $("#openedCount").textContent = `${opened} / ${size}`;
+  $("#leftCount").textContent = String(current.length ? current.length - opened : size);
+  $("#buyBtn").textContent = "购买一包";
+  $("#buyBtn").disabled = animationBusy;
+  $("#resetBtn").disabled = animationBusy;
+}
+function setStatus(msg){
+  $("#statusLine").textContent = msg || "";
+}
+function renderResults(stageHtml = ""){
+  const box = $("#results");
+  const stage = stageHtml || '<div class="stageHint">购买后不会立即展示结果。<br>点击这里，结果会在这里揭晓。</div>';
+  const cards = revealed.map((item, index) => `<div class="resultItem"><div><span class="tag">#${index + 1}</span></div><div><div class="name">${esc(item.name)}</div><div class="meta">已揭晓</div></div><div class="money">${money(item.price)}</div></div>`).join("");
+  const canClick = current.length && revealed.length < current.length && !animationBusy;
+  const stageClass = `revealStage${canClick ? " clickable" : ""}`;
+  if(!revealed.length){
+    box.innerHTML = `<div class="${stageClass}">${stage}</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="${stageClass}">${stage}</div><div class="resultGrid">${cards}</div>`;
+}
+function renderGroups(){
+  const pools = activePools();
+  $("#groupNote").textContent = `当前为${configKind === "custom" ? "自定义" : "289福袋"}配置，${drawMode === "global" ? "全局随机" : "按照分组"}模式；合计 ${packSize()} 件。`;
+  $("#groups").innerHTML = pools.map((pool, index) => {
+    const items = pool.items.map(itemParts);
+    const sum = items.reduce((total, item) => total + Number(item.weight), 0);
+    const rows = items.map(item => {
+      return `<tr><td>${esc(item.name)}</td><td>${Number(item.price) ? money(Number(item.price)) : "非卖品"}</td><td>${esc(item.weight)}%</td></tr>`;
+    }).join("");
+    return `<details ${index < 2 ? "open" : ""}><summary>${esc(pool.title)}｜抽 ${pool.draw} 次｜权重合计 ${sum}%${pool.nonSale ? "｜非卖品" : ""}</summary><table><thead><tr><th>商品</th><th>零售价</th><th>权重</th></tr></thead><tbody>${rows}</tbody></table></details>`;
+  }).join("");
+}
+function buy(){
+  current = makePack();
+  revealed = [];
+  bank = 0;
+  renderResults();
+  updateStats();
+  setStatus(`已购买 ${current.length} 件，结果已进入后台。点击拆包区域开始揭晓。`);
+}
+function revealAnimation(pick){
+  return new Promise(resolve => {
+    const names = randomNames();
+    let tick = 0;
+    renderResults(`<div class="revealCard spinning"><div class="revealKicker">正在拆包</div><div class="revealName">???</div><div class="revealPrice">???</div><div class="revealMeta">随机揭晓未拆商品</div></div>`);
+    $("#results .revealStage")?.classList.add("animating");
+    const timer = setInterval(() => {
+      tick += 1;
+      const rollingName = names[Math.floor(Math.random() * names.length)] || "???";
+      renderResults(`<div class="revealCard spinning"><div class="revealKicker">正在拆包</div><div class="revealName">${esc(rollingName)}</div><div class="revealPrice">???</div><div class="revealMeta">随机揭晓未拆商品</div></div>`);
+      $("#results .revealStage")?.classList.add("animating");
+      if(tick >= 11){
+        clearInterval(timer);
+        renderResults(`<div class="revealCard done"><div class="revealKicker">拆包结果</div><div class="revealName">${esc(pick.name)}</div><div class="revealPrice">${money(pick.price)}</div><div class="revealMeta">已揭晓</div></div>`);
+        $("#results .revealStage")?.classList.add("animating");
+        setTimeout(resolve, 620);
+      }
+    }, 82);
+  });
+}
+async function unpackLowest(){
+  if(animationBusy) return;
+  const left = current.map((item, index) => ({...item, index})).filter(item => !item.opened);
+  if(!left.length) return;
+  const pick = left[Math.floor(Math.random() * left.length)];
+  animationBusy = true;
+  updateStats();
+  setStatus("正在拆包...");
+  await revealAnimation(pick);
+  current[pick.index].opened = true;
+  bank += pick.price;
+  revealed.push(pick);
+  renderResults();
+  animationBusy = false;
+  updateStats();
+  setStatus(`拆出：${pick.name}，入库 ${money(pick.price)}。`);
+}
+function reset(){
+  if(animationBusy) return;
+  current = [];
+  revealed = [];
+  bank = 0;
+  renderResults();
+  updateStats();
+  setStatus("已清空本轮。");
+}
+function validatePools(value){
+  if(!Array.isArray(value) || !value.length) throw new Error("顶层必须是非空数组");
+  return value.map((pool, poolIndex) => {
+    if(!pool || typeof pool !== "object") throw new Error(`第 ${poolIndex + 1} 组不是对象`);
+    const title = String(pool.title || "").trim();
+    const draw = Number(pool.draw);
+    if(!title) throw new Error(`第 ${poolIndex + 1} 组缺少 title`);
+    if(!Number.isInteger(draw) || draw < 0) throw new Error(`${title} 的 draw 必须是 0 或正整数`);
+    if(!Array.isArray(pool.items) || !pool.items.length) throw new Error(`${title} 缺少 items`);
+    const items = pool.items.map((raw, itemIndex) => {
+      const item = itemParts(raw);
+      const name = String(item.name || "").trim();
+      const price = Number(item.price);
+      const weight = Number(item.weight);
+      if(!name) throw new Error(`${title} 第 ${itemIndex + 1} 个商品缺少名称`);
+      if(!Number.isFinite(price) || price < 0) throw new Error(`${name} 的价格必须是非负数字`);
+      if(!Number.isFinite(weight) || weight <= 0) throw new Error(`${name} 的权重必须大于 0`);
+      const categories = normalizeCategories(item.categories);
+      return [name, price, weight, categories];
+    });
+    return {title, draw, nonSale:Boolean(pool.nonSale), items};
+  });
+}
+function poolsForJson(pools){
+  return pools.map(pool => ({
+    title:pool.title,
+    draw:pool.draw,
+    ...(pool.nonSale ? {nonSale:true} : {}),
+    items:pool.items.map(raw => {
+      const item = itemParts(raw);
+      return [String(item.name), Number(item.price), Number(item.weight), normalizeCategories(item.categories)];
+    })
+  }));
+}
+function syncConfigEditor(){
+  $("#configEditor").value = JSON.stringify(poolsForJson(customPools), null, 2);
+}
+function applyConfigText(text){
+  customPools = validatePools(JSON.parse(text));
+  configKind = "custom";
+  current = [];
+  revealed = [];
+  bank = 0;
+  refresh();
+  setStatus(`已套用自定义配置：每包 ${packSize()} 件。`);
+}
+function exportConfig(){
+  const blob = new Blob([JSON.stringify(poolsForJson(customPools), null, 2)], {type:"application/json;charset=utf-8"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "starrail_lottery_pools.json";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+function setConfigKind(kind){
+  configKind = kind;
+  current = [];
+  revealed = [];
+  bank = 0;
+  refresh();
+  setStatus("");
+}
+function setDrawMode(mode){
+  drawMode = mode;
+  current = [];
+  revealed = [];
+  bank = 0;
+  refresh();
+  setStatus("");
+}
+function refresh(){
+  document.querySelectorAll(".modeCard").forEach(btn => btn.classList.toggle("active", btn.dataset.config === configKind));
+  document.querySelectorAll(".segBtn").forEach(btn => btn.classList.toggle("active", btn.dataset.drawMode === drawMode));
+  $("#customPanel").hidden = configKind !== "custom";
+  renderResults();
+  renderGroups();
+  updateStats();
+  syncConfigEditor();
+}
+
+$("#buyBtn").addEventListener("click", buy);
+$("#results").addEventListener("click", () => {
+  if(!current.length){
+    setStatus("请先购买一包。");
+    return;
+  }
+  if(revealed.length === current.length){
+    setStatus("本包已经全部拆完。");
+    return;
+  }
+  unpackLowest();
+});
+$("#resetBtn").addEventListener("click", reset);
+document.querySelectorAll(".modeCard").forEach(btn => btn.addEventListener("click", () => setConfigKind(btn.dataset.config)));
+document.querySelectorAll(".segBtn").forEach(btn => btn.addEventListener("click", () => setDrawMode(btn.dataset.drawMode)));
+$("#reloadConfigBtn").addEventListener("click", syncConfigEditor);
+$("#exportConfigBtn").addEventListener("click", exportConfig);
+$("#applyConfigBtn").addEventListener("click", () => {
+  try{ applyConfigText($("#configEditor").value); }
+  catch(err){ setStatus(`JSON 无法套用：${err.message}`); }
+});
+$("#importConfigFile").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{ applyConfigText(reader.result); }
+    catch(err){ setStatus(`JSON 无法导入：${err.message}`); }
+    event.target.value = "";
+  };
+  reader.readAsText(file, "UTF-8");
+});
+refresh();
+</script>
+</body>
+</html>
